@@ -21,6 +21,7 @@ module MetadataJsonLint
           'dependencies' => {
             'type' => 'array',
             'items' => {
+              'type' => 'object',
               'properties' => {
                 'name' => {
                   'type' => 'string',
@@ -76,6 +77,7 @@ module MetadataJsonLint
           'requirements' => {
             'type' => 'array',
             'items' => {
+              'type' => 'object',
               'properties' => {
                 'name' => {
                   'type' => 'string',

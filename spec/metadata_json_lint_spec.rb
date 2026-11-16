@@ -56,5 +56,30 @@ describe MetadataJsonLint do
         expect { described_class.validate_requirements!(requirements) }.not_to raise_error
       end
     end
+
+    context 'with malformed requirements' do
+      let :requirements do
+        [
+          'puppet',
+          { 'version_requirement' => '>= 7.0.0 < 9.0.0' },
+          { 'name' => 'puppet', 'version_requirement' => 7 },
+        ]
+      end
+
+      it { expect { described_class.validate_requirements!(requirements) }.not_to raise_error }
+    end
+  end
+
+  describe '.validate_dependencies!' do
+    [
+      'aoeu',
+      { 'name' => 'puppetlabs/stdlib' },
+      ['puppetlabs/stdlib'],
+      [{ 'name' => 'puppetlabs/stdlib', 'version_requirement' => 9 }],
+    ].each do |deps|
+      context "with malformed dependencies #{deps.inspect}" do
+        it { expect { described_class.validate_dependencies!(deps) }.not_to raise_error }
+      end
+    end
   end
 end

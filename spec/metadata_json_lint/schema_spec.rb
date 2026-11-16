@@ -42,6 +42,17 @@ describe MetadataJsonLint::Schema do
       }
     end
 
+    %i[dependencies requirements].each do |field|
+      context "with a non-object entry in #{field}" do
+        subject { described_class.new.validate(minimal.merge(field => ['puppetlabs/stdlib'])) }
+
+        it {
+          expect(subject).to eq([{ field: field.to_s,
+                                   message: "The property '#{field}/0' of type string did not match the following type: object", }])
+        }
+      end
+    end
+
     context 'with semver validation failure' do
       subject { described_class.new.validate(minimal.merge(version: 'a')) }
 

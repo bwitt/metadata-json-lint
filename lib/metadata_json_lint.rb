@@ -166,7 +166,7 @@ module MetadataJsonLint
   module_function :validate_metadata
 
   def validate_requirements_unique(requirements)
-    names = requirements.map { |x| x['name'] }
+    names = requirements.map { |x| x['name'] }.grep(String)
     counts = Hash.new(0)
 
     names.each { |name| counts[name.downcase] += 1 }
@@ -180,11 +180,17 @@ module MetadataJsonLint
   def validate_requirements!(requirements)
     return unless requirements.is_a?(Array)
 
+    # Malformed entries are reported by the schema validation
+    requirements = requirements.grep(Hash)
+
     requirements.each do |requirement|
       warn :requirements, "The 'pe' requirement is no longer supported by the Forge." if requirement['name'] == 'pe'
 
+      version_requirement = requirement.fetch('version_requirement', '')
+      next unless version_requirement.is_a?(String)
+
       begin
-        puppet_req = VersionRequirement.new(requirement.fetch('version_requirement', ''))
+        puppet_req = VersionRequirement.new(version_requirement)
       rescue ArgumentError => e
         # Raised when the version_requirement provided could not be parsed
         error :requirements, "Invalid 'version_requirement' field in metadata.json: #{e}"
@@ -214,13 +220,19 @@ module MetadataJsonLint
   module_function :validate_puppet_ver!
 
   def validate_dependencies!(deps)
+    # Malformed dependencies are reported by the schema validation
+    return unless deps.is_a?(Array)
+
     dep_names = []
-    deps.each do |dep|
+    deps.grep(Hash).each do |dep|
       warn :dependencies, "Duplicate dependencies on #{dep['name']}" if dep_names.include?(dep['name'])
       dep_names << dep['name']
 
+      version_requirement = dep.fetch('version_requirement', '')
+      next unless version_requirement.is_a?(String)
+
       begin
-        requirement = VersionRequirement.new(dep.fetch('version_requirement', ''))
+        requirement = VersionRequirement.new(version_requirement)
       rescue ArgumentError => e
         # Raised when the version_requirement provided could not be parsed
         error :dependencies, "Invalid 'version_requirement' field in metadata.json: #{e}"
