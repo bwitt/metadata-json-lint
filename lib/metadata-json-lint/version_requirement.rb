@@ -22,11 +22,11 @@ module MetadataJsonLint
       !/
         [><=^~]{1,2} # comparison operators
         \s*
-        \d\. # MAJOR
+        \d+\. # MAJOR
         (?:
           (?:x|\*) # MINOR is wildcard
           |
-          \d\.(?:x|\*)  # MINOR is digit and PATCH is wildcard
+          \d+\.(?:x|\*)  # MINOR is digit and PATCH is wildcard
         )
       /x.match(requirement).nil?
     end

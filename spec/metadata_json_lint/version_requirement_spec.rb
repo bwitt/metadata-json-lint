@@ -10,6 +10,7 @@ describe MetadataJsonLint::VersionRequirement do
     it { expect(described_class.new('1.0.x').mixed_syntax?).to be false }
     it { expect(described_class.new('>= 1.0.0 < 2.0').mixed_syntax?).to be false }
     it { expect(described_class.new('< 2.0').mixed_syntax?).to be false }
+    it { expect(described_class.new('>= 10.0.0 < 11.0.0').mixed_syntax?).to be false }
 
     it { expect(described_class.new('>= 1.0.x').mixed_syntax?).to be true }
     it { expect(described_class.new('>= 1.0.*').mixed_syntax?).to be true }
@@ -18,6 +19,9 @@ describe MetadataJsonLint::VersionRequirement do
     it { expect(described_class.new('>= 1.*').mixed_syntax?).to be true }
     it { expect(described_class.new('>= 1.0.0 < 2.x').mixed_syntax?).to be true }
     it { expect(described_class.new('<2.x').mixed_syntax?).to be true }
+    it { expect(described_class.new('>= 10.x').mixed_syntax?).to be true }
+    it { expect(described_class.new('>= 1.10.x').mixed_syntax?).to be true }
+    it { expect(described_class.new('>= 9.0.0 < 10.x').mixed_syntax?).to be true }
   end
 
   describe '#open_ended?' do
