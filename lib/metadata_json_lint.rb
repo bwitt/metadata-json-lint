@@ -102,8 +102,8 @@ module MetadataJsonLint
       when :json
         puts JSON.fast_generate(result: result, warnings: @warnings, errors: @errors)
       else
-        @warnings.each { |warn| puts "(WARN) #{warn}" }
-        @errors.each { |err| puts "(ERROR) #{err}" }
+        @warnings.each { |warn| puts "(WARN) #{warn[:check]}: #{warn[:msg]}" }
+        @errors.each { |err| puts "(ERROR) #{err[:check]}: #{err[:msg]}" }
         puts result
       end
 
@@ -142,7 +142,7 @@ module MetadataJsonLint
       yield :error, ((err[:field] == 'root') ? :required_fields : err[:field]), err[:message]
     end
 
-    validate_dependencies!(parsed['dependencies']) if parsed['dependencies']
+    validate_dependencies!(parsed['dependencies'], options) if parsed['dependencies']
 
     # Deprecated fields
     # From: https://docs.puppetlabs.com/puppet/latest/reference/modules_publishing.html#write-a-metadatajson-file
@@ -153,7 +153,7 @@ module MetadataJsonLint
 
     # The nested 'requirements' name of 'pe' is deprecated as well.
     # https://groups.google.com/forum/?utm_medium=email&utm_source=footer#!msg/puppet-users/nkRPvG4q0Oo/GmXa109aJQAJ
-    validate_requirements!(parsed['requirements']) if parsed['requirements']
+    validate_requirements!(parsed['requirements'], options) if parsed['requirements']
 
     # Shoulds/recommendations
     # From: https://docs.puppetlabs.com/puppet/latest/reference/modules_publishing.html#write-a-metadatajson-file
@@ -177,7 +177,7 @@ module MetadataJsonLint
   end
   module_function :validate_requirements_unique
 
-  def validate_requirements!(requirements)
+  def validate_requirements!(requirements, options = options())
     return unless requirements.is_a?(Array)
 
     requirements.each do |requirement|
@@ -190,14 +190,14 @@ module MetadataJsonLint
         error :requirements, "Invalid 'version_requirement' field in metadata.json: #{e}"
       end
 
-      validate_puppet_ver!(puppet_req) unless puppet_req.instance_variable_get(:@requirement).nil?
+      validate_puppet_ver!(puppet_req, options) unless puppet_req.instance_variable_get(:@requirement).nil?
     end
 
     validate_requirements_unique(requirements)
   end
   module_function :validate_requirements!
 
-  def validate_puppet_ver!(requirement)
+  def validate_puppet_ver!(requirement, options = options())
     if options[:strict_puppet_version] && requirement.open_ended?
       warn(:requirement, "Puppet has an open ended version requirement #{requirement.ver_range}")
     end
@@ -213,7 +213,7 @@ module MetadataJsonLint
   end
   module_function :validate_puppet_ver!
 
-  def validate_dependencies!(deps)
+  def validate_dependencies!(deps, options = options())
     dep_names = []
     deps.each do |dep|
       warn :dependencies, "Duplicate dependencies on #{dep['name']}" if dep_names.include?(dep['name'])
@@ -227,7 +227,7 @@ module MetadataJsonLint
         # Skip to the next dependency
         next
       end
-      validate_version_requirement!(dep, requirement)
+      validate_version_requirement!(dep, requirement, options)
 
       # 'version_range' is no longer used by the forge
       # See https://tickets.puppetlabs.com/browse/PUP-2781
@@ -239,7 +239,7 @@ module MetadataJsonLint
   end
   module_function :validate_dependencies!
 
-  def validate_version_requirement!(dep, requirement)
+  def validate_version_requirement!(dep, requirement, options = options())
     # Open ended dependency
     # From: https://docs.puppet.com/puppet/latest/reference/modules_metadata.html#best-practice-set-an-upper-bound-for-dependencies
     if options[:strict_dependencies] && requirement.open_ended?
@@ -258,27 +258,17 @@ module MetadataJsonLint
   end
   module_function :validate_version_requirement!
 
-  def format_error(check, msg)
-    case options[:format]
-    when :json
-      { check: check, msg: msg }
-    else
-      "#{check}: #{msg}"
-    end
-  end
-  module_function :format_error
-
   def warn(check, msg)
     @warnings ||= []
 
-    @warnings << format_error(check, msg)
+    @warnings << { check: check, msg: msg }
   end
   module_function :warn
 
   def error(check, msg)
     @errors ||= []
 
-    @errors << format_error(check, msg)
+    @errors << { check: check, msg: msg }
   end
   module_function :error
 end

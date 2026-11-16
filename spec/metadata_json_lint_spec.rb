@@ -1,4 +1,34 @@
 describe MetadataJsonLint do
+  describe '.parse' do
+    def fixture(name)
+      File.expand_path("../tests/#{name}/metadata.json", __dir__)
+    end
+
+    context 'with strict_dependencies set in the block' do
+      it do
+        expect do
+          expect(described_class.parse(fixture('open_ended_dependency')) { |o| o.strict_dependencies = true }).to be(false)
+        end.to output(/open ended dependency version requirement/).to_stdout
+      end
+    end
+
+    context 'with strict_puppet_version set in the block' do
+      it do
+        expect do
+          expect(described_class.parse(fixture('requirements_eol_version')) { |o| o.strict_puppet_version = true }).to be(false)
+        end.to output(/is no longer supported/).to_stdout
+      end
+    end
+
+    context 'with json format set in the block' do
+      it do
+        expect do
+          described_class.parse(fixture('bad_license')) { |o| o.format = :json }
+        end.to output(/"warnings":\[\{"check":"license","msg":"License identifier/).to_stdout
+      end
+    end
+  end
+
   describe '.validate_requirements!' do
     context 'empty requirements' do
       let :requirements do
